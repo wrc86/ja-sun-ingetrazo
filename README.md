@@ -1,5 +1,12 @@
 # JA Sun para IngeTrazo
 
+<img src="ja_sun/icons/sun.svg" width="64" alt="Icono de JA Sun">
+
+[Descargar v0.1.0](https://github.com/wrc86/ja-sun-ingetrazo/releases/tag/v0.1.0) · [Manual ES/EN](MANUAL.md) · [Documentación](docs/Inicio.md) · [Reportar un problema](https://github.com/wrc86/ja-sun-ingetrazo/issues)
+
+Repositorio independiente de **JA Sun**. Consulta las otras extensiones en el [catálogo de Julio Angulo](https://github.com/wrc86/ja-ingetrazo-extensions).
+
+
 **0.1.0 · Julio Angulo · GPL-3.0-or-later**
 
 Panel de sol y sombras para **IngeTrazo 0.5.7, API de extensiones 2**, probado
@@ -110,3 +117,9 @@ la instalación del usuario todavía requiere cargar el paquete en su versión.
 La API 0.x de IngeTrazo es provisional; otras versiones requieren comprobar
 compatibilidad. Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para reproducir las
 pruebas y construir los paquetes.
+
+## Galería
+
+<img src="docs/images/sun-sol.png" width="360" alt="JA Sun: sun-sol">
+
+<img src="docs/images/sun-ubicacion.png" width="360" alt="JA Sun: sun-ubicacion">

@@ -24,7 +24,7 @@ Usa el motor de sombras nativo de IngeTrazo: no añade geometría al modelo.
 ### 2. Instalación
 
 1. Descarga `ja_sun-0.1.0.zip` desde el catálogo de IngeTrazo o desde
-   [las versiones del repositorio](https://github.com/wrc86/ja-ingetrazo-extensions/releases).
+   [las versiones del repositorio](https://github.com/wrc86/ja-sun-ingetrazo/releases).
 2. Descomprímelo. Obtendrás una carpeta llamada **`ja_sun`**.
 3. En IngeTrazo abre **Extensiones → Abrir carpeta de plugins**.
 4. Copia allí la carpeta `ja_sun` completa.
@@ -160,7 +160,7 @@ precisión. Estas extensiones nacen de su práctica diaria con BIM y herramienta
 
 - Web: [lineaprima.co](https://lineaprima.co) · Perfil: [lineaprima.co/julio-eduardo-angulo](https://lineaprima.co/julio-eduardo-angulo/)
 - Correo: info@lineaprima.co · Instagram: [@buskua.co](https://instagram.com/buskua.co)
-- Código y reportes de errores: [github.com/wrc86/ja-ingetrazo-extensions](https://github.com/wrc86/ja-ingetrazo-extensions/issues)
+- Código y reportes de errores: [github.com/wrc86/ja-sun-ingetrazo](https://github.com/wrc86/ja-sun-ingetrazo/issues)
 
 ---
 
@@ -184,7 +184,7 @@ It uses IngeTrazo's native shadow engine and adds no geometry to the model.
 ### 2. Installation
 
 1. Download `ja_sun-0.1.0.zip` from the IngeTrazo catalog or from the
-   [repository releases](https://github.com/wrc86/ja-ingetrazo-extensions/releases).
+   [repository releases](https://github.com/wrc86/ja-sun-ingetrazo/releases).
 2. Unzip it. You get a folder named **`ja_sun`**.
 3. In IngeTrazo open **Extensions → Open plugins folder**.
 4. Copy the whole `ja_sun` folder there.
@@ -301,4 +301,4 @@ precision. These extensions come from his daily practice with BIM and digital to
 
 - Web: [lineaprima.co](https://lineaprima.co) · Profile: [lineaprima.co/julio-eduardo-angulo](https://lineaprima.co/julio-eduardo-angulo/)
 - Email: info@lineaprima.co · Instagram: [@buskua.co](https://instagram.com/buskua.co)
-- Code and bug reports: [github.com/wrc86/ja-ingetrazo-extensions](https://github.com/wrc86/ja-ingetrazo-extensions/issues)
+- Code and bug reports: [github.com/wrc86/ja-sun-ingetrazo](https://github.com/wrc86/ja-sun-ingetrazo/issues)

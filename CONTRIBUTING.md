@@ -1,5 +1,8 @@
 # Desarrollo de JA Sun
 
+**Alcance de esta separación:** este repositorio contiene el plugin, su documentación y el ZIP instalable. Los comandos de pruebas y empaquetado descritos abajo pertenecen al entorno o paquete de fuentes original; sus carpetas `tests/`, `scripts/` y `.reference/` no se incluyen aquí. No se presentan como comandos ejecutables desde esta copia.
+
+
 Copyright © 2026 Julio Angulo. GPL-3.0-or-later; véase LICENSE.
 
 1. Obtén el código de https://github.com/ingelibre/ingetrazo en `.reference/ingetrazo`.
