@@ -10,6 +10,8 @@ from core import sun
 from core.history import Command
 from georef.datum import SceneDatum
 
+from .i18n import tr
+
 
 def year():
     # The viewport uses date.today().year: expose that year, never a fake override.
@@ -26,24 +28,24 @@ def site(scene):
 def validated(raw):
     """Reject invalid dates and offsets before entering host history."""
     if not isinstance(raw, dict):
-        raise ValueError("Ajustes de sombra no válidos.")
+        raise ValueError(tr('Ajustes de sombra no válidos.'))
     allowed = {"enabled", "month", "day", "hour", "minute", "darkness", "utc_offset"}
     if set(raw) - allowed:
-        raise ValueError("Propiedad de sombra desconocida.")
+        raise ValueError(tr('Propiedad de sombra desconocida.'))
     result = sun.ShadowSettings().to_dict()
     result.update(raw)
     if type(result["enabled"]) is not bool:
-        raise ValueError("El estado de sombras debe ser verdadero o falso.")
+        raise ValueError(tr('El estado de sombras debe ser verdadero o falso.'))
     for key in ("month", "day", "hour", "minute"):
         if type(result[key]) is not int:
-            raise ValueError("La fecha y la hora necesitan números enteros.")
+            raise ValueError(tr('La fecha y la hora necesitan números enteros.'))
     datetime(year(), result["month"], result["day"], result["hour"], result["minute"])
     dark = result["darkness"]
     if isinstance(dark, bool) or not isinstance(dark, (int, float)) or not math.isfinite(dark) or not 0 <= dark <= 1:
-        raise ValueError("La intensidad debe estar entre 0 y 100 %.")
+        raise ValueError(tr('La intensidad debe estar entre 0 y 100 %.'))
     offset = result.get("utc_offset")
     if offset is not None and (type(offset) is not int or not -12 <= offset <= 14):
-        raise ValueError("La zona horaria admite horas enteras entre UTC−12 y UTC+14.")
+        raise ValueError(tr('La zona horaria admite horas enteras entre UTC−12 y UTC+14.'))
     if offset is None:
         result.pop("utc_offset", None)
     return result
@@ -74,9 +76,9 @@ class SetShadows(Command):
 class SetLocation(Command):
     def __init__(self, lat, lon, north):
         if not all(math.isfinite(v) for v in (lat, lon, north)):
-            raise ValueError("Escribe coordenadas finitas.")
+            raise ValueError(tr('Escribe coordenadas finitas.'))
         if not -80 <= lat <= 84 or not -180 <= lon < 180 or not -180 <= north <= 180:
-            raise ValueError("Ubicación fuera del dominio UTM admitido por el panel.")
+            raise ValueError(tr('Ubicación fuera del dominio UTM admitido por el panel.'))
         self.values = (lat, lon, north)
         self.before = None
         self.captured = False

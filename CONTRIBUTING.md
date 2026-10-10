@@ -31,3 +31,31 @@ Qt y crea el modelo de ejemplo. El render OpenGL necesita una sesión gráfica.
 Los cambios de documento deben pasar por comandos reversibles. No cambies
 directamente geometría desde el panel. Al añadir controles de render, comprueba
 primero su soporte en el viewport, las escenas y la serialización IGZ.
+
+## Adding an interface language
+
+Define a translation dictionary in `i18n.py`, using the same Spanish keys as
+`ENGLISH`, and add one entry to `LANGUAGES`. For example:
+
+```python
+FRENCH = {
+    "Idioma": "Langue",
+    "Sol": "Soleil",
+    "{minute} min/paso": "{minute} min/pas",
+    # Add the remaining entries from ENGLISH here.
+}
+
+# Inside LANGUAGES:
+"fr": LanguageSpec("Français", "fr_FR", FRENCH),
+```
+
+The registry controls the selector, accepted saved preferences, system-language
+detection and Qt date/number formatting. No changes to `ui.py` or the controller
+are needed. Restart IngeTrazo after adding an entry. This example is a partial
+catalogue, not a bundled French translation.
+
+Keep format placeholders and their specifications unchanged, such as `{minute}`
+and `{elevation:.1f}`. Missing entries fall back to English, then to the Spanish
+source text if no English translation exists. Spanish uses the original source
+text. Unknown saved language codes fall back to the system language when it is
+registered, or English otherwise.

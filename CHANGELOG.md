@@ -1,5 +1,11 @@
 # Cambios
 
+## Sin publicar
+
+- Registro central de idiomas para añadir traducciones sin modificar la interfaz.
+- Selector de idioma español/inglés/alemán con cambio inmediato y preferencia persistente.
+- Traducción de controles, lecturas solares, ayudas, accesibilidad, diálogos y errores.
+
 ## 0.1.0 — 2026-10-03
 
 - Panel solar nativo, interfaz en español y temas claro/oscuro.
