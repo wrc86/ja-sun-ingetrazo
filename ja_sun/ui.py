@@ -3,13 +3,14 @@
 """A compact Qt panel, following the host palette in light and dark mode."""
 import math
 
-from PySide6.QtCore import QDate, QLocale, QPointF, QRectF, Qt, QTime
+from PySide6.QtCore import QDate, QPointF, QRectF, Qt, QTime
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPalette, QPen
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDateEdit, QDoubleSpinBox, QFormLayout, QFrame,
     QGridLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QScrollArea,
     QSlider, QTabWidget, QTimeEdit, QVBoxLayout, QWidget,
 )
+from .i18n import LANGUAGES, language, tr
 from .model import clock_text, site, year
 
 
@@ -43,8 +44,11 @@ class SunPath(QWidget):
         self.dragging = False
         self.setMinimumHeight(218)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setAccessibleName("Recorrido solar. Arrastra sobre la curva para elegir hora; flechas para pasos de cinco minutos.")
-        self.setToolTip("Arrastra sobre el recorrido para cambiar la hora. El centro es el cenit; el círculo exterior es el horizonte.")
+        self.retranslate()
+
+    def retranslate(self):
+        self.setAccessibleName(tr("Recorrido solar. Arrastra sobre la curva para elegir hora; flechas para pasos de cinco minutos."))
+        self.setToolTip(tr("Arrastra sobre el recorrido para cambiar la hora. El centro es el cenit; el círculo exterior es el horizonte."))
 
     def geometry_data(self):
         return QPointF(self.width() / 2, self.height() / 2), min(self.width() / 2 - 32, self.height() / 2 - 27)
@@ -72,7 +76,7 @@ class SunPath(QWidget):
             p.end()
             return
         p.setPen(palette.color(QPalette.ColorRole.Text))
-        for az, text in ((0, "N"), (90, "E"), (180, "S"), (270, "O")):
+        for az, text in ((0, "N"), (90, tr("E")), (180, "S"), (270, tr("O"))):
             angle = math.radians(az + self.details["north"])
             pos = center + QPointF((radius + 15) * math.sin(angle), -(radius + 15) * math.cos(angle))
             p.drawText(QRectF(pos.x() - 10, pos.y() - 9, 20, 18), Qt.AlignmentFlag.AlignCenter, text)
@@ -149,20 +153,28 @@ class Panel(QWidget):
         self.site_stamp = None
         self.preset_stamp = None
         self.setObjectName("jaSun")
-        self.setLocale(QLocale("es_CO"))
+        self.translations = []
         self.setStyleSheet(STYLE)
         self.setMinimumWidth(270)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(9, 9, 9, 8)
         layout.setSpacing(7)
         heading = QHBoxLayout()
-        brand = label("JA Sun", True)
+        brand = self.label("JA Sun", True)
         brand.setStyleSheet("font-size:22px; font-weight:700;")
         heading.addWidget(brand)
         heading.addStretch()
-        heading.addWidget(label("SOL Y SOMBRAS"))
+        heading.addWidget(self.label("SOL Y SOMBRAS"))
         layout.addLayout(heading)
-        self.enabled = QCheckBox("Mostrar sombras en el modelo")
+        language_row = QHBoxLayout()
+        language_row.addWidget(self.label("Idioma"))
+        self.language = QComboBox()
+        for code, spec in LANGUAGES.items():
+            self.language.addItem(spec.name, code)
+        self.bind(self.language.setAccessibleName, "Idioma")
+        language_row.addWidget(self.language, 1)
+        layout.addLayout(language_row)
+        self.enabled = self.checkbox("Mostrar sombras en el modelo")
         self.enabled.toggled.connect(lambda value: self.change({"enabled": value}))
         layout.addWidget(self.enabled)
         self.tabs = QTabWidget()
@@ -170,9 +182,41 @@ class Panel(QWidget):
         self.build_sun()
         self.build_location()
         self.build_presets()
-        self.status = label("")
+        self.status = self.label("")
         layout.addWidget(self.status)
         self.updating = False
+        self.retranslate()
+        self.language.currentIndexChanged.connect(
+            lambda _: language().set(self.language.currentData()))
+
+    def bind(self, setter, source, **values):
+        self.translations.append((setter, source, values))
+        setter(tr(source, **values))
+
+    def label(self, text, bold=False):
+        widget = label("", bold)
+        if text:
+            self.bind(widget.setText, text)
+        return widget
+
+    def checkbox(self, text):
+        widget = QCheckBox()
+        self.bind(widget.setText, text)
+        return widget
+
+    def retranslate(self):
+        previous = self.updating
+        self.updating = True
+        try:
+            self.setLocale(language().locale)
+            self.language.setCurrentIndex(self.language.findData(language().code))
+            for setter, source, values in self.translations:
+                setter(tr(source, **values))
+            self.chart.retranslate()
+            self.chart.update()
+            self.play.setText(tr("Ⅱ Pausar" if self.c.playback.isActive() else "▶ Reproducir"))
+        finally:
+            self.updating = previous
 
     def page(self, title):
         scroll = QScrollArea()
@@ -183,11 +227,13 @@ class Panel(QWidget):
         box.setContentsMargins(2, 7, 2, 4)
         box.setSpacing(9)
         scroll.setWidget(content)
-        self.tabs.addTab(scroll, title)
+        index = self.tabs.addTab(scroll, "")
+        self.bind(lambda text: self.tabs.setTabText(index, text), title)
         return box
 
     def button(self, text, callback, primary=False):
-        button = QPushButton(text)
+        button = QPushButton()
+        self.bind(button.setText, text)
         button.setProperty("primary", primary)
         button.clicked.connect(lambda _checked=False: self.c.run(callback))
         return button
@@ -208,15 +254,15 @@ class Panel(QWidget):
         box = self.page("Sol")
         self.chart = SunPath(self.c)
         box.addWidget(self.chart)
-        self.metrics = label("")
+        self.metrics = self.label("")
         self.metrics.setAlignment(Qt.AlignmentFlag.AlignCenter)
         box.addWidget(self.metrics)
-        self.daylight = label("")
+        self.daylight = self.label("")
         self.daylight.setAlignment(Qt.AlignmentFlag.AlignCenter)
         box.addWidget(self.daylight)
 
         row = QHBoxLayout()
-        row.addWidget(label("Fecha", True))
+        row.addWidget(self.label("Fecha", True))
         row.addStretch()
         self.date = QDateEdit()
         self.date.setCalendarPopup(True)
@@ -227,7 +273,7 @@ class Panel(QWidget):
         row.addWidget(self.date)
         box.addLayout(row)
         self.doy = self.slider(1, QDate(year(), 12, 31).dayOfYear(), self.set_day)
-        self.doy.setAccessibleName("Día del año")
+        self.bind(self.doy.setAccessibleName, "Día del año")
         box.addWidget(self.doy)
         dates = self.dates_grid = QGridLayout()
         self.date_buttons = []
@@ -238,7 +284,7 @@ class Panel(QWidget):
         box.addLayout(dates)
 
         row = QHBoxLayout()
-        row.addWidget(label("Hora local", True))
+        row.addWidget(self.label("Hora local", True))
         row.addStretch()
         self.time = QTimeEdit()
         self.time.setDisplayFormat("HH:mm")
@@ -248,7 +294,7 @@ class Panel(QWidget):
         box.addLayout(row)
         self.time_slider = self.slider(0, 1439, self.c.set_minute)
         self.time_slider.setSingleStep(5)
-        self.time_slider.setAccessibleName("Hora local en minutos")
+        self.bind(self.time_slider.setAccessibleName, "Hora local en minutos")
         box.addWidget(self.time_slider)
         quick = self.quick_grid = QGridLayout()
         self.quick_buttons = []
@@ -261,21 +307,21 @@ class Panel(QWidget):
         quick.addWidget(self.noon, 1, 0, 1, 2)
 
         row = QHBoxLayout()
-        row.addWidget(label("Intensidad de sombra", True))
+        row.addWidget(self.label("Intensidad de sombra", True))
         row.addStretch()
-        self.intensity_text = label("")
+        self.intensity_text = self.label("")
         row.addWidget(self.intensity_text)
         box.addLayout(row)
         self.intensity = self.slider(0, 100, lambda v: self.c.manual_change({"darkness": 1 - v / 100}))
-        self.intensity.setAccessibleName("Intensidad de sombra, de cero a cien por ciento")
-        self.intensity.setToolTip("0 %: sombra imperceptible. 100 %: sombra negra.")
+        self.bind(self.intensity.setAccessibleName, "Intensidad de sombra, de cero a cien por ciento")
+        self.bind(self.intensity.setToolTip, "0 %: sombra imperceptible. 100 %: sombra negra.")
         box.addWidget(self.intensity)
 
         card = QFrame()
         card.setProperty("card", True)
         inner = QVBoxLayout(card)
         inner.setContentsMargins(9, 9, 9, 9)
-        inner.addWidget(label("Recorrer el día", True))
+        inner.addWidget(self.label("Recorrer el día", True))
         row = self.range_grid = QGridLayout()
         self.start = QTimeEdit(QTime(6, 0))
         self.end = QTimeEdit(QTime(18, 0))
@@ -284,21 +330,24 @@ class Panel(QWidget):
             control.setKeyboardTracking(False)
             control.timeChanged.connect(lambda _: self.c.stop())
         row.addWidget(self.start, 0, 0)
-        row.addWidget(label("→"), 0, 1)
+        row.addWidget(self.label("→"), 0, 1)
         row.addWidget(self.end, 0, 2)
         self.speed = QComboBox()
         for minute in (5, 15, 30, 60):
-            self.speed.addItem(f"{minute} min/paso", minute)
+            index = self.speed.count()
+            self.speed.addItem("", minute)
+            self.bind(lambda text, i=index: self.speed.setItemText(i, text),
+                      "{minute} min/paso", minute=minute)
         self.speed.setCurrentIndex(1)
         inner.addLayout(row)
         row.addWidget(self.speed, 1, 0, 1, 3)
         row = QHBoxLayout()
         self.play = self.button("▶ Reproducir", self.c.toggle_play, True)
         row.addWidget(self.play, 1)
-        self.loop = QCheckBox("Bucle")
+        self.loop = self.checkbox("Bucle")
         row.addWidget(self.loop)
         inner.addLayout(row)
-        inner.addWidget(label("Pausa conserva la hora · un paso de Deshacer."))
+        inner.addWidget(self.label("Pausa conserva la hora · un paso de Deshacer."))
         box.addWidget(card)
         box.addWidget(self.button("Guardar escena del modelo", self.c.save_scene))
         box.addStretch()
@@ -309,9 +358,9 @@ class Panel(QWidget):
 
     def build_location(self):
         box = self.page("Ubicación")
-        self.site_label = label("")
+        self.site_label = self.label("")
         box.addWidget(self.site_label)
-        box.addWidget(label("Lugar y orientación", True))
+        box.addWidget(self.label("Lugar y orientación", True))
         form = QFormLayout()
         form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         self.lat = QDoubleSpinBox()
@@ -323,29 +372,32 @@ class Panel(QWidget):
             widget.setSuffix("°")
             widget.setKeyboardTracking(False)
         self.north.setSingleStep(5)
-        form.addRow("Latitud", self.lat)
-        form.addRow("Longitud", self.lon)
-        form.addRow("Norte desde +Y", self.north)
+        form.addRow(self.label("Latitud"), self.lat)
+        form.addRow(self.label("Longitud"), self.lon)
+        form.addRow(self.label("Norte desde +Y"), self.north)
         box.addLayout(form)
-        box.addWidget(label("Norte: giro horario desde el eje verde (+Y). La ubicación y el norte son compartidos con el mapa y el terreno del modelo."))
+        box.addWidget(self.label("Norte: giro horario desde el eje verde (+Y). La ubicación y el norte son compartidos con el mapa y el terreno del modelo."))
         box.addWidget(self.button("Aplicar ubicación y norte", self.c.location, True))
-        box.addWidget(label("Zona horaria", True))
+        box.addWidget(self.label("Zona horaria", True))
         self.zone = QComboBox()
-        self.zone.addItem("Automática por longitud", None)
+        self.zone.addItem("", None)
+        self.bind(lambda text: self.zone.setItemText(0, text), "Automática por longitud")
         for value in range(-12, 15):
             self.zone.addItem(f"UTC{value:+03d}:00", value)
         self.zone.currentIndexChanged.connect(lambda _: self.change({"utc_offset": self.zone.currentData()}))
         box.addWidget(self.zone)
-        box.addWidget(label("La zona automática es una aproximación. Ajusta el desfase local y el horario de verano manualmente. Este motor admite horas enteras."))
-        self.year_label = label(f"Año utilizado por el motor: {year()}. La fecha sigue el año del equipo.")
+        box.addWidget(self.label("La zona automática es una aproximación. Ajusta el desfase local y el horario de verano manualmente. Este motor admite horas enteras."))
+        self.year_label = self.label("")
+        self.bind(self.year_label.setText,
+                  "Año utilizado por el motor: {year}. La fecha sigue el año del equipo.", year=year())
         box.addWidget(self.year_label)
-        box.addWidget(label("El sol se calcula a partir de lugar, fecha y hora. La suavidad del borde y la luz ambiental dependen del renderizador y no son controles de este panel."))
+        box.addWidget(self.label("El sol se calcula a partir de lugar, fecha y hora. La suavidad del borde y la luz ambiental dependen del renderizador y no son controles de este panel."))
         box.addStretch()
 
     def build_presets(self):
         box = self.page("Guardados")
-        box.addWidget(label("Tus ajustes solares", True))
-        box.addWidget(label("Guarda fecha, hora, intensidad y zona horaria dentro del archivo IGZ. Los ajustes usan la ubicación actual del modelo."))
+        box.addWidget(self.label("Tus ajustes solares", True))
+        box.addWidget(self.label("Guarda fecha, hora, intensidad y zona horaria dentro del archivo IGZ. Los ajustes usan la ubicación actual del modelo."))
         self.saved = QListWidget()
         self.saved.setMinimumHeight(180)
         self.saved.itemDoubleClicked.connect(lambda item: self.c.run(self.c.load_preset, item.text()))
@@ -359,7 +411,7 @@ class Panel(QWidget):
         box.addLayout(row)
         self.saved.itemSelectionChanged.connect(self.preset_selection)
         self.preset_selection()
-        box.addWidget(label("Eliminar un ajuste se puede deshacer desde el historial del modelo."))
+        box.addWidget(self.label("Eliminar un ajuste se puede deshacer desde el historial del modelo."))
         box.addStretch()
 
     def selected_preset(self):
@@ -398,25 +450,27 @@ class Panel(QWidget):
             self.chart.update()
             if details:
                 elevation, azimuth = details["elevation"], details["azimuth"]
-                metrics = f"Altura {elevation:.1f}°   ·   Acimut {azimuth:.1f}°"
+                metrics = tr("Altura {elevation:.1f}°   ·   Acimut {azimuth:.1f}°", elevation=elevation, azimuth=azimuth)
                 if elevation <= 0:
-                    metrics += "\nSol bajo el horizonte · sin sombra solar"
+                    metrics += "\n" + tr("Sol bajo el horizonte · sin sombra solar")
                 elif not sh.enabled:
-                    metrics += "\nSombras desactivadas"
+                    metrics += "\n" + tr("Sombras desactivadas")
                 elif details["ratio"] is not None:
-                    metrics += f"\nSombra de un poste de 1 m: {details['ratio']:.2f} m"
+                    metrics += "\n" + tr("Sombra de un poste de 1 m: {ratio:.2f} m", ratio=details["ratio"])
                 self.metrics.setText(metrics)
                 if details["all_day"]:
-                    daylight = "Sol sobre el horizonte durante todo el día"
+                    daylight = tr("Sol sobre el horizonte durante todo el día")
                 elif not details["daylight"]:
-                    daylight = "Sol bajo el horizonte durante todo el día"
+                    daylight = tr("Sol bajo el horizonte durante todo el día")
                 else:
                     rise, setting = details["sunrise"], details["sunset"]
-                    daylight = f"Salida ≈ {clock_text(rise) if rise is not None else '—'}   ·   Puesta ≈ {clock_text(setting) if setting is not None else '—'}"
+                    daylight = tr("Salida ≈ {rise}   ·   Puesta ≈ {setting}",
+                                  rise=clock_text(rise) if rise is not None else "—",
+                                  setting=clock_text(setting) if setting is not None else "—")
                 self.daylight.setText(daylight)
-                self.daylight.setToolTip("Horizonte geométrico plano. Muestreo cada diez minutos; no considera relieve ni refracción.")
+                self.daylight.setToolTip(tr("Horizonte geométrico plano. Muestreo cada diez minutos; no considera relieve ni refracción."))
             else:
-                self.metrics.setText("Fecha o zona horaria no válida")
+                self.metrics.setText(tr("Fecha o zona horaria no válida"))
                 self.daylight.clear()
             stamp = (id(scene), id(scene.shadows), site(scene))
             if stamp != self.site_stamp:
@@ -426,9 +480,9 @@ class Panel(QWidget):
                 self.lon.setValue(lon)
                 self.north.setValue(north)
             if scene.georef is None:
-                self.site_label.setText("Modelo sin ubicación: el motor utiliza Arequipa. Define el lugar real para estudiar el asoleamiento.")
+                self.site_label.setText(tr("Modelo sin ubicación: el motor utiliza Arequipa. Define el lugar real para estudiar el asoleamiento."))
             else:
-                self.site_label.setText(f"Ubicación del modelo\n{scene.georef.lat:.5f}°, {scene.georef.lon:.5f}°")
+                self.site_label.setText(tr("Ubicación del modelo") + f"\n{scene.georef.lat:.5f}°, {scene.georef.lon:.5f}°")
             names = tuple(sorted(presets, key=str.casefold))
             if (id(scene), id(scene.shadows), names) != self.preset_stamp:
                 selected = self.selected_preset()

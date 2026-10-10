@@ -12,6 +12,7 @@ from core.saved_views import SavedView
 from . import ICON_DIR
 from .model import (AddScene, SetLocation, SetShadows, apply_shadow,
                     clock_text, site, solar_details, validated)
+from .i18n import language, tr
 
 
 class Controller(QObject):
@@ -38,8 +39,8 @@ class Controller(QObject):
         from .ui import Panel
         self.panel = Panel(self)
         self.dock = self.app.add_panel("JA Sun", self.panel)
-        self.action = self.app.add_menu_action("JA Sun · Sol y sombras…", self.show,
-                                             "Ctrl+Alt+S", tip="Controlar el sol, las sombras y el recorrido del día.")
+        self.action = self.app.add_menu_action(tr('JA Sun · Sol y sombras…'), self.show,
+                                             "Ctrl+Alt+S", tip=tr('Controlar el sol, las sombras y el recorrido del día.'))
         if self.action is not None:
             self.action.setIcon(QIcon(str(ICON_DIR / "sun.svg")))
             self.action.setIconVisibleInMenu(True)
@@ -48,8 +49,19 @@ class Controller(QObject):
             self.toolbar.setIconSize(QSize(24, 24))
             self.toolbar.addAction(self.action)
             self.app.window.addToolBar(self.toolbar)
+        language().changed.connect(self.retranslate)
         self.app.on_document_changed(self.document_changed)
         self.timer.start()
+        self.retranslate()
+
+    def retranslate(self):
+        self.panel.retranslate()
+        if self.action is not None:
+            self.action.setText(tr("JA Sun · Sol y sombras…"))
+            tip = tr("Controlar el sol, las sombras y el recorrido del día.")
+            self.action.setToolTip(tip)
+            self.action.setStatusTip(tip)
+        self.panel.status.clear()
         self.refresh()
 
     def show(self):
@@ -119,7 +131,7 @@ class Controller(QObject):
         self.record = None
         self.expected = None
         if hasattr(self, "panel"):
-            self.panel.play.setText("▶ Reproducir")
+            self.panel.play.setText(tr('▶ Reproducir'))
 
     def end_group(self):
         self.grouping = False
@@ -163,7 +175,7 @@ class Controller(QObject):
             return
         start, end = self.panel.play_range()
         if start >= end:
-            raise ValueError("La hora final debe ser posterior a la inicial, dentro del mismo día.")
+            raise ValueError(tr('La hora final debe ser posterior a la inicial, dentro del mismo día.'))
         self.begin_group()
         minute = self.scene.shadows.hour * 60 + self.scene.shadows.minute
         if not start <= minute < end:
@@ -172,7 +184,7 @@ class Controller(QObject):
         # Start with an expected stamp even when enabling was a no-op.
         self.expected = self.stamp()
         self.playback.start()
-        self.panel.play.setText("Ⅱ Pausar")
+        self.panel.play.setText(tr('Ⅱ Pausar'))
 
     def tick(self):
         if self.stamp() != self.expected:
@@ -181,7 +193,7 @@ class Controller(QObject):
             return
         start, end = self.panel.play_range()
         if start >= end:
-            raise ValueError("La hora final debe ser posterior a la inicial.")
+            raise ValueError(tr('La hora final debe ser posterior a la inicial.'))
         minute = self.scene.shadows.hour * 60 + self.scene.shadows.minute
         step = self.panel.speed.currentData()
         if minute >= end:
@@ -212,15 +224,22 @@ class Controller(QObject):
     def save_preset(self, name=None):
         self.stop()
         if name is None:
-            name, accepted = QInputDialog.getText(self.panel, "Guardar ajuste solar", "Nombre del ajuste:")
+            dialog = QInputDialog(self.panel)
+            dialog.setWindowTitle(tr("Guardar ajuste solar"))
+            dialog.setLabelText(tr("Nombre del ajuste:"))
+            dialog.setOkButtonText(tr("Aceptar"))
+            dialog.setCancelButtonText(tr("Cancelar"))
+            accepted = dialog.exec()
+            name = dialog.textValue()
+            dialog.deleteLater()
             if not accepted:
                 return
         name = str(name).strip()
         if not 1 <= len(name) <= 80:
-            raise ValueError("Escribe un nombre de 1 a 80 caracteres.")
+            raise ValueError(tr('Escribe un nombre de 1 a 80 caracteres.'))
         presets = self.presets()
         if any(key.casefold() == name.casefold() for key in presets):
-            raise ValueError("Ya existe un ajuste con ese nombre. Usa otro nombre.")
+            raise ValueError(tr('Ya existe un ajuste con ese nombre. Usa otro nombre.'))
         presets[name] = validated(self.scene.shadows.to_dict())
         data = self.app.document_data({})
         data = data if isinstance(data, dict) else {}
@@ -232,7 +251,7 @@ class Controller(QObject):
         self.stop()
         presets = self.presets()
         if name not in presets:
-            raise ValueError("Selecciona un ajuste guardado.")
+            raise ValueError(tr('Selecciona un ajuste guardado.'))
         # A missing UTC offset in an automatic preset must replace an explicit
         # offset in the current document, not inherit it through a dict update.
         raw = validated(presets[name])
@@ -251,7 +270,8 @@ class Controller(QObject):
     def save_scene(self):
         self.stop()
         sh = self.scene.shadows
-        base = f"Sol {sh.day:02d}-{sh.month:02d} · {clock_text(sh.hour * 60 + sh.minute)}"
+        base = tr("Sol {day:02d}-{month:02d} · {time}",
+                  day=sh.day, month=sh.month, time=clock_text(sh.hour * 60 + sh.minute))
         name, index = base, 2
         names = {v.name.casefold() for v in self.scene.saved_views}
         while name.casefold() in names:
@@ -259,7 +279,7 @@ class Controller(QObject):
             index += 1
         view = SavedView.capture(name, self.scene, self.app.viewport.camera)
         self.execute(AddScene(view))
-        self.app.viewport.flash_status(f"Escena creada: {name}", 4000)
+        self.app.viewport.flash_status(tr("Escena creada: {name}", name=name), 4000)
 
     def refresh(self):
         self.last_stamp = self.stamp()
@@ -267,5 +287,5 @@ class Controller(QObject):
             details = solar_details(self.scene)
         except (ValueError, TypeError, OverflowError) as exc:
             details = None
-            self.panel.status.setText(f"Revisa la fecha o zona horaria del modelo: {exc}")
+            self.panel.status.setText(tr("Revisa la fecha o zona horaria del modelo: {error}", error=exc))
         self.panel.refresh(self.scene, details, self.presets())

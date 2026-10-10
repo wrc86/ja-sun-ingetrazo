@@ -10,7 +10,7 @@ Repositorio independiente de **JA Sun**. Consulta las otras extensiones en el [c
 **0.1.0 · Julio Angulo · GPL-3.0-or-later**
 
 Panel de sol y sombras para **IngeTrazo 0.5.7, API de extensiones 2**, probado
-contra el código del commit `6be29fe`. Interfaz en español, con temas claro y
+contra el código del commit `6be29fe`. Interfaz en español, inglés y alemán, con temas claro y
 oscuro y distribución adaptable al ancho del panel.
 
 ## Instalación
@@ -26,6 +26,25 @@ oscuro y distribución adaptable al ancho del panel.
 Es una extensión Python nativa para IngeTrazo; el paquete no se instala como
 RBZ en SketchUp. No necesita dependencias adicionales a las del anfitrión.
 Para desinstalar, cierra IngeTrazo y retira la carpeta `ja_sun`.
+
+## Idioma / Language / Sprache
+
+Selecciona **Español**, **English** o **Deutsch** en el selector de idioma de
+la parte superior del panel. El cambio es inmediato y se recuerda al reiniciar
+IngeTrazo. En el primer uso se elige el idioma del sistema si es español, inglés
+o alemán; en otros casos se elige inglés. La preferencia pertenece al plugin y se guarda
+fuera del documento IGZ. Cambiar el idioma conserva los ajustes solares, la
+reproducción y los nombres de los ajustes guardados.
+
+Choose **Deutsch**, **English** or **Español** using the language selector at
+the top of the panel. The interface updates immediately and remembers your
+choice across restarts. This setting affects JA Sun only. Existing preset
+names and model settings are preserved.
+
+Über die Sprachauswahl oben im Panel stehen **Deutsch**, **English** und
+**Español** zur Verfügung. Die Oberfläche wird sofort aktualisiert und die
+Auswahl bleibt nach einem Neustart erhalten. Modellwerte und selbst vergebene
+Vorlagennamen bleiben unverändert.
 
 ## Sol
 
